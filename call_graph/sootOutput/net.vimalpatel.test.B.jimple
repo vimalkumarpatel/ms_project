@@ -1,0 +1,34 @@
+public class net.vimalpatel.test.B extends java.lang.Object
+{
+
+    public void <init>()
+    {
+        net.vimalpatel.test.B r0;
+
+        r0 := @this: net.vimalpatel.test.B;
+        specialinvoke r0.<java.lang.Object: void <init>()>();
+        return;
+    }
+
+    public void methodB()
+    {
+        net.vimalpatel.test.B r0;
+        java.io.PrintStream $r1;
+
+        r0 := @this: net.vimalpatel.test.B;
+        $r1 = <java.lang.System: java.io.PrintStream out>;
+        virtualinvoke $r1.<java.io.PrintStream: void println(java.lang.String)>("this is method B.b() here.");
+        return;
+    }
+
+    private void unreachableMethod()
+    {
+        net.vimalpatel.test.B r0;
+        java.io.PrintStream $r1;
+
+        r0 := @this: net.vimalpatel.test.B;
+        $r1 = <java.lang.System: java.io.PrintStream out>;
+        virtualinvoke $r1.<java.io.PrintStream: void println(java.lang.String)>("this is unreachableMethod in Class B.");
+        return;
+    }
+}

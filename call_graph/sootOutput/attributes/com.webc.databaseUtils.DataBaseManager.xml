@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<attributes>
+<attribute>
+<srcPos sline="0" eline="0" spos="0" epos="0"/>
+<jmpPos sline="10" eline="10" spos="0" epos="0"/>
+<text info="[dbNname, dbUser, dbPassword]" aType="ParamNamesTag"/>
+</attribute>
+<attribute>
+<srcPos sline="0" eline="0" spos="0" epos="0"/>
+<jmpPos sline="26" eline="26" spos="0" epos="0"/>
+<text info="[dbNname, dbUser, dbPassword]" aType="ParamNamesTag"/>
+</attribute>
+<attribute>
+<srcPos sline="0" eline="0" spos="0" epos="0"/>
+<jmpPos sline="41" eline="41" spos="0" epos="0"/>
+<text info="[Url, text]" aType="ParamNamesTag"/>
+</attribute>
+<attribute>
+<srcPos sline="78" eline="78" spos="23" epos="42"/>
+<jmpPos sline="223" eline="223" spos="0" epos="0"/>
+<text info="soot.tagkit.ThrowCreatedByCompilerTag@1b317cd" aType="ThrowCreatedByCompilerTag"/>
+</attribute>
+<attribute>
+<srcPos sline="0" eline="0" spos="0" epos="0"/>
+<jmpPos sline="237" eline="237" spos="0" epos="0"/>
+<text info="[urlSrc, urlDest]" aType="ParamNamesTag"/>
+</attribute>
+<attribute>
+<srcPos sline="105" eline="105" spos="23" epos="42"/>
+<jmpPos sline="414" eline="414" spos="0" epos="0"/>
+<text info="soot.tagkit.ThrowCreatedByCompilerTag@df949a" aType="ThrowCreatedByCompilerTag"/>
+</attribute>
+<attribute>
+<srcPos sline="0" eline="0" spos="0" epos="0"/>
+<jmpPos sline="428" eline="428" spos="0" epos="0"/>
+<text info="[myQuery]" aType="ParamNamesTag"/>
+</attribute>
+<attribute>
+<srcPos sline="126" eline="126" spos="23" epos="42"/>
+<jmpPos sline="569" eline="569" spos="0" epos="0"/>
+<text info="soot.tagkit.ThrowCreatedByCompilerTag@95152a" aType="ThrowCreatedByCompilerTag"/>
+</attribute>
+<attribute>
+<srcPos sline="0" eline="0" spos="0" epos="0"/>
+<jmpPos sline="583" eline="583" spos="0" epos="0"/>
+<text info="[name]" aType="ParamNamesTag"/>
+</attribute>
+</attributes>

@@ -1,0 +1,391 @@
+package dk.brics.soot.callgraphs;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Stack;
+
+import soot.Body;
+import soot.MethodOrMethodContext;
+import soot.PatchingChain;
+import soot.Scene;
+import soot.SceneTransformer;
+import soot.SootClass;
+import soot.SootMethod;
+import soot.Unit;
+import soot.UnitBox;
+import soot.Value;
+import soot.ValueBox;
+import soot.jimple.IfStmt;
+import soot.jimple.InvokeExpr;
+import soot.jimple.InvokeStmt;
+import soot.jimple.toolkits.callgraph.CHATransformer;
+import soot.jimple.toolkits.callgraph.CallGraph;
+import soot.jimple.toolkits.callgraph.Targets;
+import soot.tagkit.LineNumberTag;
+import soot.toolkits.graph.BriefUnitGraph;
+import soot.util.Chain;
+
+public class CallStackFinderTransformer  extends SceneTransformer{
+
+		private Stack<SootMethod> stack = null;
+		CallGraph cg = null;
+		private List<SootClass> runnableClasses = null;
+		
+		public CallStackFinderTransformer(Stack<SootMethod> stack){
+			super();
+			this.stack = stack;
+			this.runnableClasses = getAllRunnableApplicationClasses();
+		}
+		
+		private List<SootClass> getAllRunnableApplicationClasses() {
+			List<SootClass> list = new ArrayList<SootClass>();
+			Chain<SootClass> appClasses = Scene.v().getApplicationClasses();
+			for(SootClass sc : appClasses){
+				if(sc.implementsInterface("java.lang.Runnable")){
+					Logger.log("ADDING CLASS TO RUNNABLE LIST:"+sc.getName());
+					list.add(sc);
+				}
+			}
+			return list;
+		}
+
+		private int Recurse(SootMethod currentSootMethod){
+			Logger.log("Recurse(" + currentSootMethod +");");
+			
+			int ret = 0;
+			/**
+			 * if the method is not on the stack only then push this method on the stack, or else we may go into a cycle!
+			 */
+			if(!stack.contains(currentSootMethod)){
+				stack.push(currentSootMethod);
+				Logger.log("STACK SIZE:"+Integer.toString(stack.size())+"CURRENT STACK:"+stack.toString());
+			}else{
+				return ret;
+			}
+			
+			/**
+			 * check if we are dealing with a Thread's start method. i.e we need to push start() method 
+			 * and translate it to run() method while finding trace-route.
+			 */
+			
+			if("start".equals(currentSootMethod.getName())){
+				//TODO-if start method then find the Thread reference on which it was called then get the runnable and then get run() method!
+				
+			}
+			
+			
+			
+			if(isTargetMethodFound(currentSootMethod)){
+				ret = 1;
+			} else {
+				Iterator<MethodOrMethodContext> targets = new Targets(
+						cg.edgesOutOf(currentSootMethod));
+				while (targets.hasNext()) {
+					SootMethod tgt = (SootMethod) targets.next();
+					if (isCalledMethodInAllowedPackageList(tgt.getDeclaringClass().getName())) {
+						int returnVal = Recurse(tgt);
+						if (returnVal == 1) {
+							ret = 1;
+							break;
+						}
+					}
+				}
+			}
+			if(ret == 0) {
+				SootMethod popped = stack.pop();
+				Logger.log("#POPPED#:"+popped);
+			}
+			return ret;
+		}
+		
+		private boolean isTargetMethodFound(SootMethod currentSootMethod) {
+
+			if(currentSootMethod.getSignature().equals(CallGraphExample.strTargetMethodSignature)){
+				Logger.log("\tcurrentMethodSignature == TargetMethodSignature");
+				return true;
+			}		
+			return false;
+		}
+
+		private boolean isCalledMethodInAllowedPackageList(String className) {
+			for(String pkgName : CallGraphExample.strPackageList){
+				if(className.startsWith(pkgName))
+					return true;
+			}
+			return false;
+		}
+
+		@Override
+		protected void internalTransform(String phaseName, Map options) {
+			Logger.log("phaseName="+phaseName+", options="+options);
+			CHATransformer.v().transform();
+			cg = Scene.v().getCallGraph();
+
+			SootMethod currentSootMethod = Scene.v().getMethod(CallGraphExample.strSourceMethodSignature);
+			int ret = Recurse(currentSootMethod);
+			Logger.log("the return value from the call graph is:"+ret);
+			
+			Logger.log("#########   now the stack has all the methods   ##########");
+			
+			/**
+			 * traceRoute will hold all the soot methods as key and list of units 
+			 * that comprise of the sub part of the over all route from source to target method.
+			 */
+			Map<SootMethod, List<Unit>> traceRoute = new HashMap<SootMethod, List<Unit>>();
+			
+			for(int i=0;i<stack.size();i++){
+				SootMethod method = stack.get(i);
+				if(i==stack.size()-1) {
+					PatchingChain<Unit> units = method.getActiveBody().getUnits();
+					List<Unit> list = new ArrayList<Unit>();
+					for(Unit u:units) list.add(u);
+					traceRoute.put(method, list);
+					break;
+				}
+				
+				Body currMethodBody = method.getActiveBody();
+				
+				SootMethod nextMethodOnStack = null;
+				nextMethodOnStack = stack.get(i+1);
+				
+				Logger.log("STARTING WITH METHOD:"+method.getSignature());
+				Logger.log("BODY TYPE:"+currMethodBody.getClass().getName());
+				
+				BriefUnitGraph unitGraph = new BriefUnitGraph(currMethodBody);
+				List<Unit> currHeads = unitGraph.getHeads();//entry points into current method.
+				List<Unit> currTails = unitGraph.getTails();//exit points from current method.
+				List<Unit> matchingInvokeTailUnits = new ArrayList<Unit>();
+				
+				//1. select a tail by matching tail InvokeStmt with next methods signature.
+				for(Unit u: currHeads){
+					Logger.log("\tHEAD UNIT:"+u.getClass().getName());
+				}
+				for(Unit u : currTails){
+					Logger.log("\tTAIL UNIT:"+u.getClass().getName());
+				}
+				
+				/**
+				 * NOTE: using Tail units gave only return statements as exit points, 
+				 * i thought that it would also include calls to other methods 
+				 * as an exit point from current method, but it was not the case,
+				 *  
+				 * so will have to look all the units of the methods body sequentially and 
+				 * find the unit containing the call to next method and 
+				 * also include all the units till then into the TRACE path.
+				 */
+				
+				PatchingChain<Unit> units = currMethodBody.getUnits();
+				List<Unit> pathUnits = new ArrayList<Unit>();
+				
+				for(Unit u:units){
+					Logger.log("\tUNIT:"+u.getClass().getName());
+					pathUnits.add(u);
+					
+					/**
+					 * using Edge e = cg.findEdge(u,nextMethod); doesn't seem to work here.
+					 * it can be a nice code if it works,
+					 * but gives me nullpointer exception some where in the Soot's code !
+					 */
+					/*Edge e = cg.findEdge(u, nextMethod);
+					if(null != e){
+						Logger.log("EDGE from unit:"+u+" to method"+nextMethod);
+					}*/
+					/**
+					 * check if the Unit is an InvokeStmt.
+					 * 	if so, then the invoke expression can be used to check 
+					 * 		if this is the unit that causes calling of next method on the stack.
+					 * 
+					 * 	keep on adding units till here to the sub-route and then break if its a Invoke to nextMethod on stack.
+					 */
+					if(u instanceof InvokeStmt){
+						InvokeStmt invokeStmt = (InvokeStmt) u;
+						InvokeExpr iExpr = invokeStmt.getInvokeExpr();
+						SootMethod calledMethod = iExpr.getMethod();
+						Logger.log("\t\tInvokeStmt Calls Method:"+calledMethod.getName()+"==" + calledMethod.getSignature());
+						if(calledMethod.getSignature().equals(nextMethodOnStack.getSignature())){
+							Logger.log("\t\tCALLED METHOD SIGNATURE MATCHES NEXT METHOD SIGNATURE.");
+							matchingInvokeTailUnits.add(invokeStmt);
+							break;
+						}
+					}
+				}
+				
+				/**
+				 * Add the units i.e "pathUnits" found in this method that form 
+				 * a sub route of the over all 
+				 * route i.e "traceRoute" between the source and target method.
+				 */
+				if(pathUnits.size()>0){
+					Logger.log("PATH UNITS:"+pathUnits.toString());
+					traceRoute.put(method, pathUnits);
+				}
+			}
+			
+			
+			/**
+			 * lets iterate through the entire route to find out the 
+			 * branching conditions and add a tag to those units.
+			 * or do some processing of the units !
+			 */
+			
+			for(int stackCounter=0;stackCounter<stack.size()-1;stackCounter++){
+				SootMethod currentMethodOnStack = stack.get(stackCounter);
+				List<Unit> unitsOfCurrentMethodOnStack = traceRoute.get(currentMethodOnStack);
+				for(Unit unit : unitsOfCurrentMethodOnStack){
+					int lineNumber = -1;
+					LineNumberTag tag = (LineNumberTag)unit.getTag("LineNumberTag");
+					if (tag != null) lineNumber = tag.getLineNumber();
+					Logger.log("UNIT:"+unit.toString()+", LINE NO:"+lineNumber);
+					
+					/**
+					 * now we want to avoid any kind of branching in our final UNIT sequence,
+					 * or else we may not reach our target method !
+					 * 
+					 *  so we will replace the conditions inside IF statements with a variable,
+					 *  and tag the UNIT
+					 */
+					if(unit.branches()){
+						//could be a GOTO -or- IF statement
+						if(unit.fallsThrough()){
+							//it's IF statement
+							Logger.log("\tFOUND a IF-STMT");
+							/**
+							 * now lets work to get the condition of this IF stmt and convert it into a variable !
+							 */
+							if(unit instanceof IfStmt){
+								IfStmt ifStmt = (IfStmt) unit;
+								Value condi = ifStmt.getCondition();
+								
+								ValueBox vb = ifStmt.getConditionBox();
+//								Value newValue = new JEqExpr();
+								Logger.log("THE IF-STMT Condition ValueBox="+vb+", Value="+condi+", Boxes="+condi.getUseBoxes()+", TYPE="+condi.getType());
+								boolean isThisBlockCallingNextMethod = false;
+								/**
+								 * check weather the IF-THEN block has a call to next method
+								 * or the ELSE part.
+								 * 
+								 * 	IF the call is in ELSE part then 
+								 * 		replace the IF condition's value with FALSE
+								 * 	ELSE
+								 * 		replace IF conditions's value with TRUE
+								 * 
+								 * IF neither calls the next method then it doesent matter, move on!!
+								 *  
+								 */
+								
+								List<UnitBox> unitBoxesInsideIfStmt = ifStmt.getUnitBoxes();
+								
+								for(UnitBox ub : unitBoxesInsideIfStmt){
+									Logger.log("\tUnitBox:"+ub.getUnit()+", IS BRANCH-TARGET ?:"+ub.isBranchTarget());
+									/**
+									 * since this is a Branch Target, we will create a UnitGraph 
+									 * from the method of this unit and get the CFG for this block
+									 * and check if any of the unit in this graph invokes the next method on stack !
+									 */
+									if(ub.isBranchTarget()){
+										Unit branchingUnit = ub.getUnit();
+										BriefUnitGraph briefUnitGraph = new BriefUnitGraph(currentMethodOnStack.getActiveBody());
+										
+										List<Unit> succUnits = briefUnitGraph.getSuccsOf(branchingUnit);
+										List<Unit> successors = new ArrayList<Unit>();
+										successors.addAll(briefUnitGraph.getSuccsOf(branchingUnit));
+										for(int i=0;i<successors.size();i++) {
+											Unit u = successors.get(i);
+											Logger.log("IF-STMT::UnitBox::UnitBranch::BranchingUnit::SuccUnit="+u);
+											successors.addAll(briefUnitGraph.getSuccsOf(u));
+											if(u instanceof InvokeStmt){
+												InvokeStmt istmt = (InvokeStmt)u;
+												String signatureNextMothodOnStack = stack.get(stackCounter+1).getSignature();
+												if(istmt.getInvokeExpr().getMethod().getSignature().equals(signatureNextMothodOnStack)){
+													// OKAYYYY this IF-THEN block does calls the next method on stack.
+													// we must any how force the execution to pass through this block.
+													Logger.log("THIS UNIT CALLS THE NEXT METHOD ON STACK!!!");
+													isThisBlockCallingNextMethod = true;
+													break;
+												}
+											}
+										
+										}
+									}
+								}
+								
+								/** 
+								 * now check if our IF block had a call to next method on stack,
+								 * if so, then just replace this IF condition with true or else replace with false !!
+								 */
+								if(isThisBlockCallingNextMethod){
+									 
+								} else {
+									
+								}
+								
+							}
+							
+						}else{
+							//it's a GOTO statement
+							Logger.log("\tFOUND GOTO-STMT");
+						}
+					} else {
+						// this unit will not lead to branching
+					}
+				}
+			}
+			
+//			Iterator<MethodOrMethodContext> targets = new Targets(
+//					cg.edgesOutOf(srcSootMethod));		
+//			while (targets.hasNext()) {
+//				SootMethod tgt = (SootMethod) targets.next();
+//				Logger.log(srcSootMethod+" CALLS "+tgt);
+//			}
+			
+						
+
+//				if (tgt.getDeclaringClass().getName()
+//						.equals("com.webc.downloader.HtmlDownloader")
+//						&& tgt.getName().contains("<init>")) {
+//					Logger.log("....#########  TRUE  ##########....");
+	//
+//					SootClass htmlDownloader = Scene.v().getSootClass(
+//							"com.webc.downloader.HtmlDownloader");
+//					List<SootMethod> methods = htmlDownloader.getMethods();
+//					Iterator<SootMethod> it = methods.iterator();
+//					while (it.hasNext()) {
+//						SootMethod sm = it.next();
+//						Logger.log("\t" + sm.getName());
+//						if (sm.getName().contains("<init>")) {
+//							Logger.log("\t\tCONSTRUCTOR FOUND :: "
+//									+ sm.getBytecodeParms());
+	//
+//						}
+//						if (sm.getName().contains("run")) {
+//							Logger.log("\t\tRUN METHOD FOUND :: "
+//									+ sm.getBytecodeParms());
+//							Body b = sm.getActiveBody();
+//							UnitPrinter up = new NormalUnitPrinter(b);
+//							List<UnitBox> listBoxes = b.getUnitBoxes(true);
+//							for (UnitBox ubox : listBoxes) {
+//								Unit u = ubox.getUnit();
+//								List listValueBoxes = u.getUseAndDefBoxes();
+//								for (Object valueBox : listValueBoxes) {
+//									Logger.log("value box: "
+//											+ valueBox.toString());
+//									if (valueBox instanceof ValueBox) {
+//										ValueBox vb = (ValueBox) valueBox;
+//										Logger.log("VALUE == "
+//												+ vb.getValue());
+	//
+//									}
+//								}
+//							}
+//						}
+//					}
+//				}
+			}
+		}
+		
+
+
+

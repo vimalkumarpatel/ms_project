@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<attributes>
+<attribute>
+<srcPos sline="78" eline="78" spos="23" epos="42"/>
+<jmpPos sline="0" eline="0" spos="0" epos="0"/>
+<text info="soot.tagkit.ThrowCreatedByCompilerTag@1bb87b4" aType="ThrowCreatedByCompilerTag"/>
+</attribute>
+<attribute>
+<srcPos sline="105" eline="105" spos="23" epos="42"/>
+<jmpPos sline="0" eline="0" spos="0" epos="0"/>
+<text info="soot.tagkit.ThrowCreatedByCompilerTag@ca5808" aType="ThrowCreatedByCompilerTag"/>
+</attribute>
+<attribute>
+<srcPos sline="126" eline="126" spos="23" epos="42"/>
+<jmpPos sline="0" eline="0" spos="0" epos="0"/>
+<text info="soot.tagkit.ThrowCreatedByCompilerTag@599987" aType="ThrowCreatedByCompilerTag"/>
+</attribute>
+<attribute>
+<srcPos sline="0" eline="0" spos="0" epos="0"/>
+<jmpPos sline="0" eline="0" spos="0" epos="0"/>
+<text info="[dbNname, dbUser, dbPassword]" aType="ParamNamesTag"/>
+</attribute>
+<attribute>
+<srcPos sline="0" eline="0" spos="0" epos="0"/>
+<jmpPos sline="0" eline="0" spos="0" epos="0"/>
+<text info="[dbNname, dbUser, dbPassword]" aType="ParamNamesTag"/>
+</attribute>
+<attribute>
+<srcPos sline="0" eline="0" spos="0" epos="0"/>
+<jmpPos sline="0" eline="0" spos="0" epos="0"/>
+<text info="[Url, text]" aType="ParamNamesTag"/>
+</attribute>
+<attribute>
+<srcPos sline="0" eline="0" spos="0" epos="0"/>
+<jmpPos sline="0" eline="0" spos="0" epos="0"/>
+<text info="[urlSrc, urlDest]" aType="ParamNamesTag"/>
+</attribute>
+<attribute>
+<srcPos sline="0" eline="0" spos="0" epos="0"/>
+<jmpPos sline="0" eline="0" spos="0" epos="0"/>
+<text info="[myQuery]" aType="ParamNamesTag"/>
+</attribute>
+<attribute>
+<srcPos sline="0" eline="0" spos="0" epos="0"/>
+<jmpPos sline="0" eline="0" spos="0" epos="0"/>
+<text info="[name]" aType="ParamNamesTag"/>
+</attribute>
+</attributes>

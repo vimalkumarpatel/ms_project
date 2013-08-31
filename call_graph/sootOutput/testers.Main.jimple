@@ -1,0 +1,50 @@
+public class testers.Main extends java.lang.Object
+{
+    private static com.webc.databaseUtils.DataBaseManager database;
+    private static com.webc.downloader.HtmlDownloader htmlDownloader;
+    private static com.webc.utils.QueueManager queueManager;
+
+    public void <init>()
+    {
+        testers.Main r0;
+
+        r0 := @this: testers.Main;
+        specialinvoke r0.<java.lang.Object: void <init>()>();
+        return;
+    }
+
+    public static void main(java.lang.String[]) throws java.lang.Exception
+    {
+        java.lang.String[] r0;
+        com.webc.databaseUtils.DataBaseManager $r1, $r5, $r9;
+        com.webc.utils.QueueManager $r4, $r6, $r8;
+        com.webc.downloader.HtmlDownloader $r7, $r11;
+        java.lang.Thread $r10;
+        net.vimalpatel.test.A $r12;
+
+        r0 := @parameter0: java.lang.String[];
+        $r1 = new com.webc.databaseUtils.DataBaseManager;
+        specialinvoke $r1.<com.webc.databaseUtils.DataBaseManager: void <init>(java.lang.String,java.lang.String,java.lang.String)>("webcrawler", "root", "root");
+        <testers.Main: com.webc.databaseUtils.DataBaseManager database> = $r1;
+        $r4 = new com.webc.utils.QueueManager;
+        $r5 = <testers.Main: com.webc.databaseUtils.DataBaseManager database>;
+        specialinvoke $r4.<com.webc.utils.QueueManager: void <init>(com.webc.databaseUtils.DataBaseManager)>($r5);
+        <testers.Main: com.webc.utils.QueueManager queueManager> = $r4;
+        $r6 = <testers.Main: com.webc.utils.QueueManager queueManager>;
+        virtualinvoke $r6.<com.webc.utils.QueueManager: void AddUrl(java.lang.String)>("http://java.sun.com/docs/books/tutorial/jdbc/basics/index.html");
+        $r7 = new com.webc.downloader.HtmlDownloader;
+        $r8 = <testers.Main: com.webc.utils.QueueManager queueManager>;
+        $r9 = <testers.Main: com.webc.databaseUtils.DataBaseManager database>;
+        specialinvoke $r7.<com.webc.downloader.HtmlDownloader: void <init>(com.webc.utils.QueueManager,com.webc.databaseUtils.DataBaseManager)>($r8, $r9);
+        <testers.Main: com.webc.downloader.HtmlDownloader htmlDownloader> = $r7;
+        $r10 = new java.lang.Thread;
+        $r11 = <testers.Main: com.webc.downloader.HtmlDownloader htmlDownloader>;
+        specialinvoke $r10.<java.lang.Thread: void <init>(java.lang.Runnable)>($r11);
+        virtualinvoke $r10.<java.lang.Thread: void start()>();
+        $r12 = new net.vimalpatel.test.A;
+        specialinvoke $r12.<net.vimalpatel.test.A: void <init>()>();
+        virtualinvoke $r12.<net.vimalpatel.test.A: void methodA()>();
+        virtualinvoke $r12.<net.vimalpatel.test.A: void methodA2()>();
+        return;
+    }
+}

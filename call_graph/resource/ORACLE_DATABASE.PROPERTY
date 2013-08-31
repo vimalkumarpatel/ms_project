@@ -1,0 +1,7 @@
+URL_2=webc/webc@localhost:1522:webc
+USER=webc
+PASSWORD=webc
+SERVICENAME=webc
+PORTNUMBER=1522
+SERVERNAME=localhost
+URL=jdbc:oracle:thin:@//VIMAL-LAPTOP:1522/webc
