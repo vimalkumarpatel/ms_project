@@ -23,38 +23,45 @@ import soot.jimple.toolkits.callgraph.Targets;
 public class CallGraphExample_2
 {	
 	
-	public static Stack<SootMethod> stack = new Stack<SootMethod>();
-	public static String strSourceClass = "net.vimalpatel.test.A";
-	public static String strSourceMethod = "main";
+	static Stack<SootMethod> stack = new Stack<SootMethod>();
+	static String strSourceClass = "net.vimalpatel.test.A";
+	static String strSourceMethod = "main";
+	static String strSourceMethodSignature = "<net.vimalpatel.test.A: void main(java.lang.String[])>";
+	static String strTargetClass = "net.vimalpatel.test.B";
+	static String strTargetMethod = "methodB";
+	static String strTargetMethodSignature = "<net.vimalpatel.test.B: void methodB()>";
+	static ArrayList<String> packageList = new ArrayList<String>();
 	
-//	public static String strSourceClass = "testers.Main";
-//	public static String strSourceMethod = "main";
-	
-	public static String strTargetClass = "net.vimalpatel.test.B";
-	public static String strTargetMethod = "methodB";
-	
-	public static void main(String[] args) {
-		
-		CallGraphExample_2 cge = new CallGraphExample_2();
-		
+	public static void main(String[] args) {		
 		
 		   List<String> argsList = new ArrayList<String>(Arrays.asList(args));
 		   Scene.v().getApplicationClasses();
 			if (argsList.isEmpty()) 
 				argsList.addAll(Arrays.asList(new String[] {
+						"-keep-line-number",
+//						"jb",
+//						"-use-original-names",
+						"-w",
 						"-W",
+						"-f",
+						"jimple",
 						"-app",
 						"-main-class", 
-//						"testers.Main",// main-class
-//						"testers.Main",// argument classes
+						"net.vimalpatel.test.A",// main-class
+						"net.vimalpatel.test.A",// argument classes
 						strSourceClass,
 						strSourceClass,
 						strTargetClass//
 				}));
 
-		
+			
+			packageList.add("net.vimalpatel.test");
+			packageList.add("com.webc");
 
-		   PackManager.v().getPack("wjtp").add(new Transform("wjtp.myTrans", new myTransformer_2(stack)));
+			//Stack<SootMethod> stack, ArrayList<String> packageList,String strSourceMethod,String strSourceMethodSignature,String strTargetMethod,String strTargetMethodSignature
+		   PackManager.v().getPack("wjtp").add(new Transform("wjtp.myTrans", new CallStackFinderTransformer(stack,packageList,
+				   strSourceMethod,strSourceMethodSignature,
+				   strTargetMethod,strTargetMethodSignature)));
 
 	           args = argsList.toArray(new String[0]);
 	           

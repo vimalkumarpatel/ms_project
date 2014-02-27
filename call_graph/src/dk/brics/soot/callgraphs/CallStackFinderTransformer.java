@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Stack;
 
 import soot.Body;
@@ -34,9 +35,25 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 		CallGraph cg = null;
 		private List<SootClass> runnableClasses = null;
 		
-		public CallStackFinderTransformer(Stack<SootMethod> stack){
+		public ArrayList<String> packageList = new ArrayList<String>();
+
+		public String strSourceClass = "";
+		public String strSourceMethod = "";
+		
+		public String strTargetClass = "";
+		public String strTargetMethod = "";
+
+		public String strSourceMethodSignature = "";
+		public String strTargetMethodSignature = "";		
+		
+		public CallStackFinderTransformer(Stack<SootMethod> stack, ArrayList<String> packageList,String strSourceMethod,String strSourceMethodSignature,String strTargetMethod,String strTargetMethodSignature){
 			super();
 			this.stack = stack;
+			this.packageList = packageList;
+			this.strSourceMethod = strSourceMethod;
+			this.strTargetMethod = strTargetMethod;
+			this.strSourceMethodSignature = strSourceMethodSignature;
+			this.strTargetMethodSignature = strTargetMethodSignature;			
 			this.runnableClasses = getAllRunnableApplicationClasses();
 		}
 		
@@ -61,7 +78,7 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 			 */
 			if(!stack.contains(currentSootMethod)){
 				stack.push(currentSootMethod);
-				Logger.log("STACK SIZE:"+Integer.toString(stack.size())+"CURRENT STACK:"+stack.toString());
+				Logger.log("STACK SIZE:"+Integer.toString(stack.size())+", CURRENT STACK:"+stack.toString());
 			}else{
 				return ret;
 			}
@@ -70,7 +87,7 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 			 * check if we are dealing with a Thread's start method. i.e we need to push start() method 
 			 * and translate it to run() method while finding trace-route.
 			 */
-			
+			// sorry man, too complicated to dwell into, not supporting as of now !
 			if("start".equals(currentSootMethod.getName())){
 				//TODO-if start method then find the Thread reference on which it was called then get the runnable and then get run() method!
 				
@@ -83,9 +100,12 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 			} else {
 				Iterator<MethodOrMethodContext> targets = new Targets(
 						cg.edgesOutOf(currentSootMethod));
+				
+				
 				while (targets.hasNext()) {
 					SootMethod tgt = (SootMethod) targets.next();
-					if (isCalledMethodInAllowedPackageList(tgt.getDeclaringClass().getName())) {
+					Logger.log("\tEdgeOut:"+tgt.getSignature());
+					if (isCalledMethodInAllowedPackageList(tgt.getDeclaringClass().getPackageName())) {
 						int returnVal = Recurse(tgt);
 						if (returnVal == 1) {
 							ret = 1;
@@ -103,7 +123,7 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 		
 		private boolean isTargetMethodFound(SootMethod currentSootMethod) {
 
-			if(currentSootMethod.getSignature().equals(CallGraphExample.strTargetMethodSignature)){
+			if(currentSootMethod.getSignature().equals(strTargetMethodSignature)){
 				Logger.log("\tcurrentMethodSignature == TargetMethodSignature");
 				return true;
 			}		
@@ -111,10 +131,13 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 		}
 
 		private boolean isCalledMethodInAllowedPackageList(String className) {
-			for(String pkgName : CallGraphExample.strPackageList){
+			for(String pkgName : packageList){
 				if(className.startsWith(pkgName))
+					Logger.log("\t\tisCalledMethodInAllowedPackageList('"+className+"') = TRUE");
 					return true;
 			}
+			
+			Logger.log("\t\tisCalledMethodInAllowedPackageList('"+className+"') = FALSE");
 			return false;
 		}
 
@@ -123,8 +146,8 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 			Logger.log("phaseName="+phaseName+", options="+options);
 			CHATransformer.v().transform();
 			cg = Scene.v().getCallGraph();
-
-			SootMethod currentSootMethod = Scene.v().getMethod(CallGraphExample.strSourceMethodSignature);
+			Logger.log("searching for target method in packageList="+packageList);
+			SootMethod currentSootMethod = Scene.v().getMethod(strSourceMethodSignature);
 			int ret = Recurse(currentSootMethod);
 			Logger.log("the return value from the call graph is:"+ret);
 			
@@ -148,8 +171,8 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 				
 				Body currMethodBody = method.getActiveBody();
 				
-				SootMethod nextMethodOnStack = null;
-				nextMethodOnStack = stack.get(i+1);
+				SootMethod nextMethodOnStack = (i+1>stack.size())?null:stack.get(i+1);
+//				nextMethodOnStack = stack.get(i+1);
 				
 				Logger.log("STARTING WITH METHOD:"+method.getSignature());
 				Logger.log("BODY TYPE:"+currMethodBody.getClass().getName());
@@ -178,9 +201,11 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 				 */
 				
 				PatchingChain<Unit> units = currMethodBody.getUnits();
+				Iterator<Unit> itrUnits = units.iterator();
 				List<Unit> pathUnits = new ArrayList<Unit>();
 				
-				for(Unit u:units){
+				while(itrUnits.hasNext()){
+					Unit u = itrUnits.next();
 					Logger.log("\tUNIT:"+u.getClass().getName());
 					pathUnits.add(u);
 					
@@ -223,7 +248,11 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 					traceRoute.put(method, pathUnits);
 				}
 			}
-			
+			Logger.log("##############################  TRACEROUTE  ##################################");
+			for(Entry<SootMethod, List<Unit>> traceRouteMapEntry : traceRoute.entrySet()){
+				Logger.log("TRACE ROUTE ENTRY:"+traceRouteMapEntry.getKey().getName()+" :: "+traceRouteMapEntry.getValue().toString());
+			}
+			Logger.log("################################################################");			
 			
 			/**
 			 * lets iterate through the entire route to find out the 
@@ -261,7 +290,7 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 								
 								ValueBox vb = ifStmt.getConditionBox();
 //								Value newValue = new JEqExpr();
-								Logger.log("THE IF-STMT Condition ValueBox="+vb+", Value="+condi+", Boxes="+condi.getUseBoxes()+", TYPE="+condi.getType());
+								Logger.log("THE IF-STMT Condition getConditionBox="+vb+", getCondition="+condi+", condi.getUseBoxes()="+condi.getUseBoxes()+", condi.getType()="+condi.getType());
 								boolean isThisBlockCallingNextMethod = false;
 								/**
 								 * check weather the IF-THEN block has a call to next method
@@ -277,7 +306,7 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 								 */
 								
 								List<UnitBox> unitBoxesInsideIfStmt = ifStmt.getUnitBoxes();
-								
+								Logger.log("\tunitBoxesInsideIfStmt inside IF-STMT = "+unitBoxesInsideIfStmt.size());
 								for(UnitBox ub : unitBoxesInsideIfStmt){
 									Logger.log("\tUnitBox:"+ub.getUnit()+", IS BRANCH-TARGET ?:"+ub.isBranchTarget());
 									/**
@@ -294,7 +323,7 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 										successors.addAll(briefUnitGraph.getSuccsOf(branchingUnit));
 										for(int i=0;i<successors.size();i++) {
 											Unit u = successors.get(i);
-											Logger.log("IF-STMT::UnitBox::UnitBranch::BranchingUnit::SuccUnit="+u);
+											Logger.log("\t\tIF-STMT::UnitBox::UnitBranch::BranchingUnit::SuccUnit="+u);//TODO: check if this is invoke stmt to next method on stack, if so then we need JVM to execute this UNITBOX of the IF-ELSE block. 
 											successors.addAll(briefUnitGraph.getSuccsOf(u));
 											if(u instanceof InvokeStmt){
 												InvokeStmt istmt = (InvokeStmt)u;
@@ -317,9 +346,9 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 								 * if so, then just replace this IF condition with true or else replace with false !!
 								 */
 								if(isThisBlockCallingNextMethod){
-									 
+									 //TODO: replace the condition of the IF-ELSE to be true so this block will get executed.
 								} else {
-									
+									//TODO: this means that there was no invoke found in the IF part of IF-ELSE block.
 								}
 								
 							}
@@ -327,6 +356,7 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 						}else{
 							//it's a GOTO statement
 							Logger.log("\tFOUND GOTO-STMT");
+							//TODO: do stuff similar to above , but take care - the condition might be needed to set FALSE if invoke to next method is found here ! 
 						}
 					} else {
 						// this unit will not lead to branching
