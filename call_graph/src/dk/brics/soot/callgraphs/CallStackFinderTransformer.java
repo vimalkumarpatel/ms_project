@@ -8,20 +8,29 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Stack;
 
+import soot.AttributesUnitPrinter;
 import soot.Body;
+import soot.Local;
 import soot.MethodOrMethodContext;
 import soot.PatchingChain;
 import soot.Scene;
 import soot.SceneTransformer;
 import soot.SootClass;
+import soot.SootFieldRef;
 import soot.SootMethod;
+import soot.SootMethodRef;
+import soot.Type;
 import soot.Unit;
 import soot.UnitBox;
+import soot.UnitPrinter;
 import soot.Value;
 import soot.ValueBox;
+import soot.jimple.Constant;
+import soot.jimple.IdentityRef;
 import soot.jimple.IfStmt;
 import soot.jimple.InvokeExpr;
 import soot.jimple.InvokeStmt;
+import soot.jimple.internal.JGotoStmt;
 import soot.jimple.toolkits.callgraph.CHATransformer;
 import soot.jimple.toolkits.callgraph.CallGraph;
 import soot.jimple.toolkits.callgraph.Targets;
@@ -318,7 +327,6 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 										Unit branchingUnit = ub.getUnit();
 										BriefUnitGraph briefUnitGraph = new BriefUnitGraph(currentMethodOnStack.getActiveBody());
 										
-										List<Unit> succUnits = briefUnitGraph.getSuccsOf(branchingUnit);
 										List<Unit> successors = new ArrayList<Unit>();
 										successors.addAll(briefUnitGraph.getSuccsOf(branchingUnit));
 										for(int i=0;i<successors.size();i++) {
@@ -355,8 +363,71 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 							
 						}else{
 							//it's a GOTO statement
-							Logger.log("\tFOUND GOTO-STMT");
-							//TODO: do stuff similar to above , but take care - the condition might be needed to set FALSE if invoke to next method is found here ! 
+							Logger.log("\tFOUND GOTO-STMT, unit="+unit);
+							if(unit instanceof JGotoStmt){
+								JGotoStmt gotoStmt = (JGotoStmt) unit;
+								List gotoUnitBoxes = gotoStmt.getUnitBoxes();
+								Iterator<UnitBox> itrGotoUnitBoxes = gotoUnitBoxes.iterator();
+								while(itrGotoUnitBoxes.hasNext()){
+									UnitBox ub = itrGotoUnitBoxes.next();
+									Logger.log("\t\tGOTO-STMT::UnitBox="+ub.toString());
+									
+									if(ub.isBranchTarget()){
+										Unit branchingUnit = ub.getUnit();
+										BriefUnitGraph briefUnitGraph = new BriefUnitGraph(currentMethodOnStack.getActiveBody());
+										
+										List<Unit> successors = new ArrayList<Unit>();
+										successors.addAll(briefUnitGraph.getSuccsOf(branchingUnit));
+										for(int i=0;i<successors.size();i++){
+											Logger.log("\t\t\tGOTO-STMT ----> "+successors.get(i));
+										}
+										for(Iterator<Unit> itrUnits = successors.iterator();itrUnits.hasNext();) {
+											Unit u = itrUnits.next();
+											Logger.log("\t\t\tGOTO-STMT->UnitBox->unit="+u);
+										}
+									}
+								}
+							}
+							//TODO: do stuff similar to above , but take care - the condition might be needed to set FALSE if invoke to next method is found here !
+							/**
+							 * lets check all the units in this block !
+							 */
+//							
+//							List<UnitBox> unitBoxesInsideIfStmt = ifStmt.getUnitBoxes();
+//							Logger.log("\tunitBoxesInsideIfStmt inside IF-STMT = "+unitBoxesInsideIfStmt.size());
+//							for(UnitBox ub : unitBoxesInsideIfStmt){
+//								Logger.log("\tUnitBox:"+ub.getUnit()+", IS BRANCH-TARGET ?:"+ub.isBranchTarget());
+//								/**
+//								 * since this is a Branch Target, we will create a UnitGraph 
+//								 * from the method of this unit and get the CFG for this block
+//								 * and check if any of the unit in this graph invokes the next method on stack !
+//								 */
+//								if(ub.isBranchTarget()){
+//									Unit branchingUnit = ub.getUnit();
+//									BriefUnitGraph briefUnitGraph = new BriefUnitGraph(currentMethodOnStack.getActiveBody());
+//									
+//									List<Unit> succUnits = briefUnitGraph.getSuccsOf(branchingUnit);
+//									List<Unit> successors = new ArrayList<Unit>();
+//									successors.addAll(briefUnitGraph.getSuccsOf(branchingUnit));
+//									for(int i=0;i<successors.size();i++) {
+//										Unit u = successors.get(i);
+//										Logger.log("\t\tIF-STMT::UnitBox::UnitBranch::BranchingUnit::SuccUnit="+u);//TODO: check if this is invoke stmt to next method on stack, if so then we need JVM to execute this UNITBOX of the IF-ELSE block. 
+//										successors.addAll(briefUnitGraph.getSuccsOf(u));
+//										if(u instanceof InvokeStmt){
+//											InvokeStmt istmt = (InvokeStmt)u;
+//											String signatureNextMothodOnStack = stack.get(stackCounter+1).getSignature();
+//											if(istmt.getInvokeExpr().getMethod().getSignature().equals(signatureNextMothodOnStack)){
+//												// OKAYYYY this IF-THEN block does calls the next method on stack.
+//												// we must any how force the execution to pass through this block.
+//												Logger.log("THIS UNIT CALLS THE NEXT METHOD ON STACK!!!");
+//												isThisBlockCallingNextMethod = true;
+//												break;
+//											}
+//										}
+//									}
+//								}
+//							}
+							
 						}
 					} else {
 						// this unit will not lead to branching
