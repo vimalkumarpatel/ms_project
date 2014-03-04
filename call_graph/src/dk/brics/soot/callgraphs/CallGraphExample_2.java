@@ -33,7 +33,7 @@ public class CallGraphExample_2
 	static ArrayList<String> packageList = new ArrayList<String>();
 	
 	public static void main(String[] args) {		
-		
+
 		   List<String> argsList = new ArrayList<String>(Arrays.asList(args));
 		   Scene.v().getApplicationClasses();
 			if (argsList.isEmpty()) 
@@ -45,7 +45,7 @@ public class CallGraphExample_2
 						"-W",
 						"-f",
 						"jimple",
-						"-app",
+//						"-app",
 						"-main-class", 
 						"net.vimalpatel.test.A",// main-class
 						"net.vimalpatel.test.A",// argument classes
@@ -64,7 +64,9 @@ public class CallGraphExample_2
 				   strTargetMethod,strTargetMethodSignature)));
 
 	           args = argsList.toArray(new String[0]);
-	           
+	   		for(int i=0;i<args.length;i++){
+				System.out.println("args["+i+"]="+args[i]);
+			}	           
 	           soot.Main.main(args);		
 
 	}

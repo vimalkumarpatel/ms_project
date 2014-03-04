@@ -7,7 +7,13 @@ public class B {
 	}
 
 	
+	
+	
 	private void unreachableMethod(){
 		System.out.println("this is unreachableMethod in Class B.");
+	}
+	
+	public static void main(String[] args){
+		
 	}
 }

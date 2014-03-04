@@ -287,7 +287,9 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 					 */
 					if(unit.branches()){
 						//could be a GOTO -or- IF statement
+						boolean isThisUnitCallingNextMethod = false;
 						if(unit.fallsThrough()){
+							
 							//it's IF statement
 							Logger.log("\tFOUND a IF-STMT");
 							/**
@@ -296,11 +298,9 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 							if(unit instanceof IfStmt){
 								IfStmt ifStmt = (IfStmt) unit;
 								Value condi = ifStmt.getCondition();
-								
-								ValueBox vb = ifStmt.getConditionBox();
 //								Value newValue = new JEqExpr();
-								Logger.log("THE IF-STMT Condition getConditionBox="+vb+", getCondition="+condi+", condi.getUseBoxes()="+condi.getUseBoxes()+", condi.getType()="+condi.getType());
-								boolean isThisBlockCallingNextMethod = false;
+								Logger.log("THE IF-STMT Condition getConditionBox="+ifStmt.getConditionBox()+", getCondition="+ifStmt.getCondition()+", condi.getUseBoxes()="+condi.getUseBoxes()+", condi.getType()="+condi.getType());
+								
 								/**
 								 * check weather the IF-THEN block has a call to next method
 								 * or the ELSE part.
@@ -326,7 +326,6 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 									if(ub.isBranchTarget()){
 										Unit branchingUnit = ub.getUnit();
 										BriefUnitGraph briefUnitGraph = new BriefUnitGraph(currentMethodOnStack.getActiveBody());
-										
 										List<Unit> successors = new ArrayList<Unit>();
 										successors.addAll(briefUnitGraph.getSuccsOf(branchingUnit));
 										for(int i=0;i<successors.size();i++) {
@@ -340,23 +339,13 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 													// OKAYYYY this IF-THEN block does calls the next method on stack.
 													// we must any how force the execution to pass through this block.
 													Logger.log("THIS UNIT CALLS THE NEXT METHOD ON STACK!!!");
-													isThisBlockCallingNextMethod = true;
+													isThisUnitCallingNextMethod = true;
 													break;
 												}
 											}
 										
 										}
 									}
-								}
-								
-								/** 
-								 * now check if our IF block had a call to next method on stack,
-								 * if so, then just replace this IF condition with true or else replace with false !!
-								 */
-								if(isThisBlockCallingNextMethod){
-									 //TODO: replace the condition of the IF-ELSE to be true so this block will get executed.
-								} else {
-									//TODO: this means that there was no invoke found in the IF part of IF-ELSE block.
 								}
 								
 							}
@@ -384,6 +373,14 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 										for(Iterator<Unit> itrUnits = successors.iterator();itrUnits.hasNext();) {
 											Unit u = itrUnits.next();
 											Logger.log("\t\t\tGOTO-STMT->UnitBox->unit="+u);
+											if(u instanceof InvokeStmt){
+												InvokeStmt istmt = (InvokeStmt)u;
+												String signatureNextMothodOnStack = stack.get(stackCounter+1).getSignature();
+												if(istmt.getInvokeExpr().getMethod().getSignature().equals(signatureNextMothodOnStack)){
+													isThisUnitCallingNextMethod = true;
+													Logger.log("THIS UNIT CALLS THE NEXT METHOD ON STACK!!!");
+												}
+											}
 										}
 									}
 								}
@@ -429,6 +426,18 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 //							}
 							
 						}
+						
+						/** 
+						 * now check if our IF block had a call to next method on stack,
+						 * if so, then just replace this IF condition with true or else replace with false !!
+						 */
+						if(isThisUnitCallingNextMethod){
+							 //TODO: replace the condition of the IF-ELSE to be true so this block will get executed.
+						} else {
+							//TODO: this means that there was no invoke found in the IF part of IF-ELSE block.
+						}
+						
+						
 					} else {
 						// this unit will not lead to branching
 					}
