@@ -9,12 +9,17 @@ public class A {
 		A a = new A();
 		int x = 1;
 		boolean testBool = (x<2)?true:false;
+		
+		if(true){
+			
+			System.out.println("THIS IS A TRUE CONDITION :)");
+		}
 		if(testBool){
 			//call methodA
-			int dummyInt1 = 10;
 			boolean dummyBool1 = true;
+			if(dummyBool1) System.out.println("DUMMY BOOL IS TRUE !");
 			a.methodA();
-			Long dummyLong1 = new Long(10);
+			
 		}else{
 
 			

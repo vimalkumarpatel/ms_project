@@ -38,13 +38,13 @@ public class CallGraphExample_2
 		   Scene.v().getApplicationClasses();
 			if (argsList.isEmpty()) 
 				argsList.addAll(Arrays.asList(new String[] {
-						"-keep-line-number",
 //						"jb",
 //						"-use-original-names",
 						"-w",
-						"-W",
-						"-f",
-						"jimple",
+//						"-W",
+						"-f",//output format
+							//"class",
+							"jimple",
 //						"-app",
 						"-main-class", 
 						"net.vimalpatel.test.A",// main-class

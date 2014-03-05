@@ -271,6 +271,12 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 			
 			for(int stackCounter=0;stackCounter<stack.size()-1;stackCounter++){
 				SootMethod currentMethodOnStack = stack.get(stackCounter);
+				/**
+				 * create a local dummy boolean for this method and insertrument in method anyways,
+				 * we will use it as and when required to control our branching !
+				 */
+				InstrumentMethodInsertLocalDummyBoolean(currentMethodOnStack);
+
 				List<Unit> unitsOfCurrentMethodOnStack = traceRoute.get(currentMethodOnStack);
 				for(Unit unit : unitsOfCurrentMethodOnStack){
 					int lineNumber = -1;
@@ -343,13 +349,10 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 													break;
 												}
 											}
-										
 										}
 									}
 								}
-								
 							}
-							
 						}else{
 							//it's a GOTO statement
 							Logger.log("\tFOUND GOTO-STMT, unit="+unit);
@@ -433,8 +436,21 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 						 */
 						if(isThisUnitCallingNextMethod){
 							 //TODO: replace the condition of the IF-ELSE to be true so this block will get executed.
+							
+							/**
+							 * if this unit is IF CONDITION then turn it TRUE,
+							 * if this unit is GOTO then the IF of this goto needs to be turned to FALSE
+							 */
+							
+
+							
+							
 						} else {
 							//TODO: this means that there was no invoke found in the IF part of IF-ELSE block.
+							/**
+							 * if this unit is IF CONDITION then turn this condition to FALSE, 
+							 * so that the GOTO may be executed and MAY-BE it contains the call to next method on stack !
+							 */
 						}
 						
 						
@@ -494,6 +510,18 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 //					}
 //				}
 			}
+
+		private void InstrumentMethodInsertLocalDummyBoolean(
+				SootMethod currentMethodOnStack) {
+			Body currentMethodBody = currentMethodOnStack.getActiveBody();
+			Chain<Unit> units = currentMethodBody.getUnits();
+			Iterator<Unit> snapShotItr = units.snapshotIterator();
+			Chain<Local> locals = currentMethodBody.getLocals();
+			for(Iterator<Local> it = locals.iterator();it.hasNext();){
+				Local l = it.next();
+				System.out.println("\tLocal::"+l.getName());
+			}
+		}
 		}
 		
 
