@@ -1,4 +1,4 @@
-package dk.brics.soot.callgraphs;
+package net.vimalpatel.maindriver;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
+import net.vimalpatel.utils.Logger;
+import dk.brics.soot.callgraphs.CallStackFinderTransformer;
 import soot.MethodOrMethodContext;
 import soot.PackManager;
 import soot.Scene;
@@ -20,7 +22,7 @@ import soot.jimple.toolkits.callgraph.ReachableMethods;
 import soot.jimple.toolkits.callgraph.Targets;
 
 
-public class CallGraphExample_2
+public class MainDriver_CallGraph
 {	
 	
 	static Stack<SootMethod> stack = new Stack<SootMethod>();
@@ -30,7 +32,13 @@ public class CallGraphExample_2
 	static String strTargetClass = "net.vimalpatel.test.B";
 	static String strTargetMethod = "methodB";
 	static String strTargetMethodSignature = "<net.vimalpatel.test.B: void methodB()>";
-	static ArrayList<String> packageList = new ArrayList<String>();
+	static ArrayList<String> packageList = null;
+	static{
+		packageList = new ArrayList<String>();
+		packageList.add("net.vimalpatel.test");
+		packageList.add("com.webc");
+	}
+	
 	
 	public static void main(String[] args) {		
 
@@ -38,25 +46,25 @@ public class CallGraphExample_2
 		   Scene.v().getApplicationClasses();
 			if (argsList.isEmpty()) 
 				argsList.addAll(Arrays.asList(new String[] {
-//						"jb",
-//						"-use-original-names",
-						"-w",
-//						"-W",
-						"-f",//output format
+						"-keep-line-number",
+						//whole application mode
+							"-w",
+						//Whole program optimize using soot
+							//"-whole-optimize",
+						//output format
+							"-f",
 							//"class",
 							"jimple",
-//						"-app",
-						"-main-class", 
-						"net.vimalpatel.test.A",// main-class
-						"net.vimalpatel.test.A",// argument classes
-						strSourceClass,
-						strSourceClass,
-						strTargetClass//
+						//Run in application mode, processing all classes referenced by argument classes.
+							//"-app",
+						//(entry point) in whole-program analysis
+							"-main-class", 
+							"net.vimalpatel.test.A",// main-class
+							"net.vimalpatel.test.A",// argument classes
+							strSourceClass,
+							strSourceClass,
+							strTargetClass//
 				}));
-
-			
-			packageList.add("net.vimalpatel.test");
-			packageList.add("com.webc");
 
 			//Stack<SootMethod> stack, ArrayList<String> packageList,String strSourceMethod,String strSourceMethodSignature,String strTargetMethod,String strTargetMethodSignature
 		   PackManager.v().getPack("wjtp").add(new Transform("wjtp.myTrans", new CallStackFinderTransformer(stack,packageList,
@@ -65,7 +73,7 @@ public class CallGraphExample_2
 
 	           args = argsList.toArray(new String[0]);
 	   		for(int i=0;i<args.length;i++){
-				System.out.println("args["+i+"]="+args[i]);
+				Logger.log("args["+i+"]="+args[i]);
 			}	           
 	           soot.Main.main(args);		
 
@@ -76,7 +84,13 @@ public class CallGraphExample_2
 
 
 
-
+/**
+ * 
+ * @author vimalkumarpatel
+ * 
+ * this class is not used right now, also i have kind of deprecated code for this class.
+ *
+ */
 class myTransformer_2 extends SceneTransformer{
 
 	private Stack<SootMethod> stack = null;
@@ -88,17 +102,17 @@ class myTransformer_2 extends SceneTransformer{
 	}
 	
 	private int Recurse(String strClassName, String strMethodName){
-		System.out.println("Recurse(" + strClassName + " , " + strMethodName +");");
+		Logger.log("Recurse(" + strClassName + " , " + strMethodName +");");
 		SootClass srcSootClass = Scene.v().getSootClass(strClassName);
 		SootMethod srcSootMethod = srcSootClass.getMethodByName(strMethodName);
-		System.out.println("CurrentMethodSignature:"+srcSootMethod);
+		Logger.log("CurrentMethodSignature:"+srcSootMethod);
 		stack.push(srcSootMethod);
 		
 
 		int ret = 0;
-		if(srcSootMethod.getDeclaringClass().toString() == CallGraphExample_2.strTargetClass
+		if(srcSootMethod.getDeclaringClass().toString() == MainDriver_CallGraph.strTargetClass
 				&&
-			srcSootMethod.getName().startsWith(CallGraphExample_2.strTargetMethod)){
+			srcSootMethod.getName().startsWith(MainDriver_CallGraph.strTargetMethod)){
 			ret = 1;
 			return ret;
 		}
@@ -123,37 +137,37 @@ class myTransformer_2 extends SceneTransformer{
 	
 	@Override
 	protected void internalTransform(String phaseName, Map options) {
-		System.out.println("phaseName="+phaseName+", options="+options);
+		Logger.log("phaseName="+phaseName+", options="+options);
 		CHATransformer.v().transform();
 		cg = Scene.v().getCallGraph();
-		SootClass srcSootClass = Scene.v().getSootClass(CallGraphExample_2.strSourceClass);
-		SootMethod srcSootMethod = srcSootClass.getMethodByName(CallGraphExample_2.strSourceMethod);
+		SootClass srcSootClass = Scene.v().getSootClass(MainDriver_CallGraph.strSourceClass);
+		SootMethod srcSootMethod = srcSootClass.getMethodByName(MainDriver_CallGraph.strSourceMethod);
 		
-		SootClass tgtSootClass = Scene.v().getSootClass(CallGraphExample_2.strTargetClass);
-		SootMethod tgtSootMethod = tgtSootClass.getMethodByName(CallGraphExample_2.strTargetMethod);
+		SootClass tgtSootClass = Scene.v().getSootClass(MainDriver_CallGraph.strTargetClass);
+		SootMethod tgtSootMethod = tgtSootClass.getMethodByName(MainDriver_CallGraph.strTargetMethod);
 
 		SootMethod unreachableSootMethod = tgtSootClass.getMethodByName("unreachableMethod");		
 		
 		ReachableMethods rm = Scene.v().getReachableMethods();
 		System.out.print("CHECKING if tgtSootMethod:" + tgtSootMethod.getSignature()+" is reachable using Scene.v().getReachableMethods(); == ");
 		if (rm.contains(tgtSootMethod)) {
-			System.out.println("TRUE");
+			Logger.log("TRUE");
 		} else {
-			System.out.println("FALSE");
+			Logger.log("FALSE");
 		}
 		
 		System.out.print("CHECKING if unreachableSootMethod:" + unreachableSootMethod.getSignature()+" is reachable using Scene.v().getReachableMethods(); == ");
 		if (rm.contains(unreachableSootMethod)) {
-			System.out.println("TRUE");
+			Logger.log("TRUE");
 		} else {
-			System.out.println("FALSE");
+			Logger.log("FALSE");
 		}
 
 //		Iterator<MethodOrMethodContext> it = rm.listener();
 //		while (it.hasNext()) {
 //			SootMethod method = (SootMethod) it.next();
 //			// method is reachable
-//			System.out.println("method:"+method+" is reachable.");
+//			Logger.log("method:"+method+" is reachable.");
 //		}
 		
 //		stack.push(tgt);
@@ -164,13 +178,13 @@ class myTransformer_2 extends SceneTransformer{
 //				cg.edgesOutOf(srcSootMethod));		
 //		while (targets.hasNext()) {
 //			SootMethod tgt = (SootMethod) targets.next();
-//			System.out.println(srcSootMethod+" CALLS "+tgt);
+//			Logger.log(srcSootMethod+" CALLS "+tgt);
 //		}
 
 //			if (tgt.getDeclaringClass().getName()
 //					.equals("com.webc.downloader.HtmlDownloader")
 //					&& tgt.getName().contains("<init>")) {
-//				System.out.println("....#########  TRUE  ##########....");
+//				Logger.log("....#########  TRUE  ##########....");
 //
 //				SootClass htmlDownloader = Scene.v().getSootClass(
 //						"com.webc.downloader.HtmlDownloader");
@@ -178,14 +192,14 @@ class myTransformer_2 extends SceneTransformer{
 //				Iterator<SootMethod> it = methods.iterator();
 //				while (it.hasNext()) {
 //					SootMethod sm = it.next();
-//					System.out.println("\t" + sm.getName());
+//					Logger.log("\t" + sm.getName());
 //					if (sm.getName().contains("<init>")) {
-//						System.out.println("\t\tCONSTRUCTOR FOUND :: "
+//						Logger.log("\t\tCONSTRUCTOR FOUND :: "
 //								+ sm.getBytecodeParms());
 //
 //					}
 //					if (sm.getName().contains("run")) {
-//						System.out.println("\t\tRUN METHOD FOUND :: "
+//						Logger.log("\t\tRUN METHOD FOUND :: "
 //								+ sm.getBytecodeParms());
 //						Body b = sm.getActiveBody();
 //						UnitPrinter up = new NormalUnitPrinter(b);
@@ -194,11 +208,11 @@ class myTransformer_2 extends SceneTransformer{
 //							Unit u = ubox.getUnit();
 //							List listValueBoxes = u.getUseAndDefBoxes();
 //							for (Object valueBox : listValueBoxes) {
-//								System.out.println("value box: "
+//								Logger.log("value box: "
 //										+ valueBox.toString());
 //								if (valueBox instanceof ValueBox) {
 //									ValueBox vb = (ValueBox) valueBox;
-//									System.out.println("VALUE == "
+//									Logger.log("VALUE == "
 //											+ vb.getValue());
 //
 //								}

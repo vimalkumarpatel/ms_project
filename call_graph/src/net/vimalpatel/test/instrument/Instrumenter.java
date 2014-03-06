@@ -22,6 +22,9 @@ import soot.util.Chain;
 
 /**
  * @author vimalkumarpatel
+ * 
+ * This class is a proof of concept transformer
+ * for demonstrating instrumentation using soot.
  *
  */
 public class Instrumenter extends BodyTransformer {

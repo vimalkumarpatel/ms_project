@@ -1,4 +1,4 @@
-package dk.brics.soot.callgraphs;
+package net.vimalpatel.maindriver;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -8,40 +8,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
 
+import net.vimalpatel.utils.Logger;
+import dk.brics.soot.callgraphs.CallStackFinderTransformer;
 import soot.PackManager;
 import soot.Scene;
 import soot.SootMethod;
 import soot.Transform;
 
-class Logger{
-	private static BufferedWriter bw = null;
-	static{
-		try{
-			bw = new BufferedWriter(new FileWriter(new File("new.txt")));
-		}catch(Exception ex){
-			ex.printStackTrace();
-		}
-	}
-	public static void log(String msg){
-		try{
-			System.out.println(msg);
-			bw.write(msg);
-	        bw.newLine();
-	        bw.flush();
-		}catch(Exception ex){
-			ex.printStackTrace();
-		}		
-	}
-	public static void close() {
-		try{
-			bw.flush();
-			bw.close();
-		} catch(Exception ex) {
-			ex.printStackTrace();
-		}
-		
-	}
-}
 public class CallGraphExample
 {	
 	

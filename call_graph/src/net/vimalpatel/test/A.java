@@ -1,5 +1,12 @@
 package net.vimalpatel.test;
 
+/**
+ * 
+ * @author vimalkumarpatel
+ * 
+ * this class is purely for test purposes
+ *
+ */
 public class A {
 
 	/**
