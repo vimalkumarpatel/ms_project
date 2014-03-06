@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="lib/mysql-connector-java-5.1.7-bin.jar"/>
+	<classpathentry kind="lib" path="lib/ojdbc14_g.jar"/>
+	<classpathentry kind="lib" path="lib/tomcat-dbcp.jar"/>
+	<classpathentry kind="lib" path="lib/pao.jar"/>
+	<classpathentry kind="lib" path="lib/polyglot.jar"/>
+	<classpathentry kind="lib" path="lib/pth.jar"/>
+	<classpathentry kind="lib" path="lib/soot-2.5.0.jar" sourcepath="lib/sootsrc-2.5.0.jar"/>
+	<classpathentry kind="lib" path="lib/sootclasses-2.5.0.jar"/>
+	<classpathentry kind="lib" path="lib/sootsrc-2.5.0.jar"/>
+	<classpathentry kind="lib" path="lib/coffer.jar"/>
+	<classpathentry kind="lib" path="lib/jasminclasses-2.5.0.jar"/>
+	<classpathentry kind="lib" path="lib/jasminsrc-2.5.0.jar"/>
+	<classpathentry kind="lib" path="lib/java_cup.jar"/>
+	<classpathentry kind="lib" path="lib/JFlex.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
