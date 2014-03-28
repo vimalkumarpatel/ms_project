@@ -19,17 +19,22 @@ import soot.SootMethod;
 import soot.Unit;
 import soot.UnitBox;
 import soot.Value;
+import soot.jimple.ConditionExpr;
 import soot.jimple.GotoStmt;
 import soot.jimple.IfStmt;
 import soot.jimple.InvokeExpr;
 import soot.jimple.InvokeStmt;
 import soot.jimple.ReturnStmt;
 import soot.jimple.Stmt;
+import soot.jimple.internal.JEqExpr;
 import soot.jimple.internal.JGotoStmt;
+import soot.jimple.internal.JIfStmt;
 import soot.jimple.toolkits.callgraph.CHATransformer;
 import soot.jimple.toolkits.callgraph.CallGraph;
 import soot.jimple.toolkits.callgraph.Targets;
 import soot.tagkit.LineNumberTag;
+import soot.toolkits.graph.Block;
+import soot.toolkits.graph.BriefBlockGraph;
 import soot.toolkits.graph.BriefUnitGraph;
 import soot.util.Chain;
 
@@ -295,24 +300,161 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 		for(int stackCounter=0;stackCounter<stack.size()-1;stackCounter++){
 			SootMethod currentMethodOnStack = stack.get(stackCounter);
 			SootMethod nextMethodOnStack = (stackCounter+1>stack.size())?null:stack.get(stackCounter+1);
+			////////////////////////////////////////////////////////////////////////////
 			/**
-			 * create a local dummy boolean for this method and insertrument in method anyways,
-			 * we will use it as and when required to control our branching !
+			 * using the all new brief block graph manipulation technique developed with cutting edge technology
+			 * to instrument and execute the desired branch in all the methods that are involved in process pleasing the god !    
 			 */
-			InstrumentMethodInsertLocalDummyBoolean(currentMethodOnStack,nextMethodOnStack);
-			System.out.println("######################### BRANCHING UNITS ##############################");
-			//we get all unit boxes that may be branching targets !
-			List<UnitBox> branchingUnitBox = currentMethodOnStack.getActiveBody().getUnitBoxes(true);
-			Iterator<UnitBox> itrUnitBox = branchingUnitBox.iterator();
-			while(itrUnitBox.hasNext()){
-				UnitBox ub = itrUnitBox.next();
-				Unit u = ub.getUnit();
-				Logger.log("unitbox="+ub+" ; unit"+u);
+			
+			Body methodBody = currentSootMethod.getActiveBody();
+			System.out.println("===========================================");
+			BriefBlockGraph bbg = new BriefBlockGraph(methodBody);
+			List<Block> blocks = bbg.getBlocks();
+			for(Block b: blocks){
+				System.out.println("BLOCK="+b);
 			}
-			System.out.println("#######################################################");
-//			instrumentBranchesInCurrentMethodCallingNextMethod(currentMethodOnStack, stack.get(stackCounter+1));
+			System.out.println("===========================================");
+			
+			//Do The VooDoo !!
+			Logger.log("DOING TO VOODOO: currentMethodOnStack="+currentMethodOnStack+" , nextMethodOnStack="+nextMethodOnStack);
+			recurseBlocks(bbg,blocks.get(0),0,null,currentMethodOnStack,nextMethodOnStack);
+
+			System.out.println("===========================================");
+			blocks = bbg.getBlocks();
+			for(Block b: blocks){
+				System.out.println("BLOCK="+b);
+			}
+			System.out.println("===========================================");
+			
+			/////////////////////////////////////////////////////////////////////////////
+//			/**
+//			 * create a local dummy boolean for this method and insertrument in method anyways,
+//			 * we will use it as and when required to control our branching !
+//			 */
+////			InstrumentMethodInsertLocalDummyBoolean(currentMethodOnStack,nextMethodOnStack);
+//			System.out.println("######################### BRANCHING UNITS ##############################");
+//			//we get all unit boxes that may be branching targets !
+//			List<UnitBox> branchingUnitBox = currentMethodOnStack.getActiveBody().getUnitBoxes(true);
+//			Iterator<UnitBox> itrUnitBox = branchingUnitBox.iterator();
+//			while(itrUnitBox.hasNext()){
+//				UnitBox ub = itrUnitBox.next();
+//				Unit u = ub.getUnit();
+//				Logger.log("unitbox="+ub+" ; unit"+u);
+//			}
+//			System.out.println("#######################################################");
+////			instrumentBranchesInCurrentMethodCallingNextMethod(currentMethodOnStack, stack.get(stackCounter+1));
 		}
 	}
+	
+	
+	private Map recurseBlocks(BriefBlockGraph bbg, Block currBlock,int level,Stmt predTailStmtTgt, SootMethod currSootMethod, SootMethod nxtSootMethod) {
+		Map retMap = new HashMap();
+		retMap.put("CALL2NXTMETHOD", false);
+		String info = "LEVEL#"+level+","+currBlock.toShortString()+"-";
+
+		Stmt currTailStmtTgt = null;
+	
+		Unit currHeadUnit = currBlock.getHead();
+//		if(currHeadUnit.equals(predTailStmtTgt)){
+//			retMap.put("PREDTAILSTMTTGT2CURRHEADUNIT",true);
+//		}
+		
+		// in case block has multiple successors then get the goto/target unit for tail unit.
+		List<Block> succBlocks = bbg.getSuccsOf(currBlock);
+		if(succBlocks.size()>1){
+			//get last block, which is surely IF and get its GOTO
+			Unit tailUnit = currBlock.getTail();
+			System.out.println(info+"Tail Unit="+tailUnit);
+			Stmt s = (Stmt)tailUnit;
+			if(s instanceof IfStmt){
+				IfStmt ifStmt = (IfStmt)s;
+				currTailStmtTgt = ifStmt.getTarget();
+				System.out.println(info+"Target="+currTailStmtTgt);
+			}
+		}
+		
+		System.out.print(info+"SUCC found=");
+		for(Block b:succBlocks) System.out.print(b.toShortString()+", ");
+		System.out.println("");
+		
+		//calculate CALL2NXTMETHOD, and skip recursing if CALL2NXTMETHOD=true.
+		boolean CALL2NXTMETHOD = false;
+		Iterator<Unit> itrUnits = currBlock.iterator();
+		while(itrUnits.hasNext()){
+			Unit u = itrUnits.next();
+			if(u instanceof Stmt && ((Stmt)u).containsInvokeExpr()){
+				Stmt s = (Stmt) u;
+				InvokeExpr invokeExpr = s.getInvokeExpr();
+				SootMethod invokedMethod = invokeExpr.getMethod();
+				System.out.println(info+"nxtSootMethod.getSignature()="+nxtSootMethod.getSignature()+", invokedMethod.getSignature()="+invokedMethod.getSignature());
+				if(nxtSootMethod.getSignature() == invokedMethod.getSignature()){
+					CALL2NXTMETHOD = true;
+					retMap.put("CALL2NXTMETHOD", CALL2NXTMETHOD);
+					System.out.println(info+"CALL2NXTMETHOD = "+CALL2NXTMETHOD);
+				}
+			}
+		}
+		
+		if(CALL2NXTMETHOD){
+			//set values in the retMap map and do wrapup stuff and return.
+			return retMap;
+		}
+		if(succBlocks.size()==0){
+			retMap.put("CALL2NXTMETHOD", false);
+			return retMap;
+		}
+		
+		List<Block> succs = new ArrayList<Block>();//store those successor blocks that call nxtMethod. 
+		List<Map> retValues = new ArrayList<Map>();//store all returned maps from all the succ of this block
+	
+		for(Block b: succBlocks){
+			System.out.println(info+"RECURSING:"+b.toShortString());
+			Map ret = recurseBlocks(bbg, b,level+1,currTailStmtTgt,currSootMethod,nxtSootMethod);
+			if(ret.get("CALL2NXTMETHOD").equals(true)){
+				//this succ calls the next method, set the successor of current block to this succ block.
+				System.out.println(info+"found block calling nextMethod:"+b.toShortString());
+				succs.add(b);
+				break;
+			}
+		}
+		
+		if(succs.size()>0){
+			System.out.print(info+"Changing successors to =");
+			for(Block b:succs) System.out.print(b.toShortString()+", ");
+			System.out.println("");
+			
+			//get the first successor block
+			//get the head unit of the block and replace the curr block's tail stmt target to the new unit			
+			Block succ = succs.get(0);
+			Unit succHeadUnit = succ.getHead();
+			Unit currTailUnit = currBlock.getTail();
+			
+			System.out.println(info+"CURR_TAIL_UNIT_TYPE="+currTailUnit.getClass().toString()+" , TAIL_UNIT="+currTailUnit);
+			if(currTailUnit instanceof JIfStmt){
+				System.out.println(info+"Setting new Target for TAIL_UNIT to :"+succHeadUnit);
+				JIfStmt s = (JIfStmt) currTailUnit;
+				//set a new target for the IF branching
+				s.setTarget(succHeadUnit);
+//				currBlock.setSuccs(succs);
+				//create an expression that is TRUE and 
+				//set it as IF stmt's condition expr
+				Value condition = s.getCondition();
+				ConditionExpr oldExpr = (ConditionExpr) condition;
+				JEqExpr newExpr = new JEqExpr(oldExpr.getOp1(), oldExpr.getOp1());
+				System.out.println(info+"IF STMT condition substitution: Old="+oldExpr+" , New="+newExpr);
+				s.setCondition(newExpr);
+				///////////////
+				CALL2NXTMETHOD=true;
+				retMap.put("CALL2NXTMETHOD", CALL2NXTMETHOD);
+			}
+		}
+		
+		return retMap;
+	}
+
+	
+	
+	
 	
 	private void instrumentBranchesInCurrentMethodCallingNextMethod(SootMethod currentMethodOnStack, SootMethod NextMethod){
 		Logger.log("INSIDE :: instrumentBranchesInCurrentMethodCallingNextMethod()");

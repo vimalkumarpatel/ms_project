@@ -54,8 +54,8 @@ public class MainDriver_CallStackFinderTransformer
 							//"-whole-optimize",
 						//output format
 							"-f",
-							//"class",
-							"jimple",
+							"class",
+							//"jimple",
 							//"shimple",
 						//-via-shimple
 							"-via-shimple",

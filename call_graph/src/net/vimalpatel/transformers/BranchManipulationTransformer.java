@@ -6,7 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import net.vimalpatel.maindriver.MainDriver_AssignmentTransformer;
+import net.vimalpatel.maindriver.MainDriver_BranchManipulationTransformer;
 import soot.Body;
 import soot.Scene;
 import soot.SceneTransformer;
@@ -23,16 +23,34 @@ import soot.jimple.toolkits.callgraph.CHATransformer;
 import soot.toolkits.graph.Block;
 import soot.toolkits.graph.BriefBlockGraph;
 
-public class AsignmentTransformer  extends SceneTransformer{
+/**
+ * 
+ * @author vimalkumarpatel
+ * 
+ * this class is a demo transformer.
+ * used for demo of code branch instrumentation,
+ * to force a method to execute a call to another method
+ * written somewhere in its branches.
+ *
+ */
+public class BranchManipulationTransformer  extends SceneTransformer{
 
 	SootMethod currentSootMethod = null;
 	SootMethod nextSootMethod = null;
+	String currentSootMethodSignature = null;
+	String nextSootMethodSignaure = null;
+	
+	public BranchManipulationTransformer(String currentSootMethodSignature, String nextSootMethodSignature){
+		this.currentSootMethodSignature = currentSootMethodSignature;
+		this.nextSootMethodSignaure = nextSootMethodSignature;
+	}
+	
 	@Override
 	protected void internalTransform(String arg0, Map arg1) {
 		System.out.println("runnung a new transformer :)");
 		CHATransformer.v().transform();
-		currentSootMethod = Scene.v().getMethod(MainDriver_AssignmentTransformer.strSourceMethodSignature);
-		nextSootMethod = Scene.v().getMethod(MainDriver_AssignmentTransformer.strTargetMethodSignature);
+		currentSootMethod = Scene.v().getMethod(this.currentSootMethodSignature);
+		nextSootMethod = Scene.v().getMethod(this.nextSootMethodSignaure);
 		
 		Body methodBody = currentSootMethod.getActiveBody();
 		System.out.println("===========================================");
@@ -158,4 +176,5 @@ public class AsignmentTransformer  extends SceneTransformer{
 		
 		return retMap;
 	}
+
 }

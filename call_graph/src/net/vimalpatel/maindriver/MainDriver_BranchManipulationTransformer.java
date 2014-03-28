@@ -4,13 +4,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import net.vimalpatel.transformers.AsignmentTransformer;
+import net.vimalpatel.transformers.BranchManipulationTransformer;
 import soot.PackManager;
 import soot.Scene;
 import soot.Transform;
 
 
-public class MainDriver_AssignmentTransformer
+public class MainDriver_BranchManipulationTransformer
 {	
 	
 	public static String strSourceClass = "net.vimalpatel.test.A";
@@ -53,7 +53,9 @@ public class MainDriver_AssignmentTransformer
 				}));
 
 			//Stack<SootMethod> stack, ArrayList<String> packageList,String strSourceMeth1od,String strSourceMethodSignature,String strTargetMethod,String strTargetMethodSignature
-		   PackManager.v().getPack("wjtp").add(new Transform("wjtp.myTrans", new AsignmentTransformer()));
+		   PackManager.v().getPack("wjtp").add(new Transform("wjtp.BranchManipulationTransformer", 
+				   new BranchManipulationTransformer(strSourceMethodSignature, strTargetMethodSignature)
+		   ));
 		   
 
 	           args = argsList.toArray(new String[0]);
