@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import net.vimalpatel.test.instrument.Instrumenter;
+import net.vimalpatel.transformers.Instrumenter;
 import soot.Pack;
 import soot.PackManager;
 import soot.Scene;

@@ -17,38 +17,52 @@ public class A {
 		int x = 1;
 		boolean testBool = (x<2)?true:false;
 		
-		if(true){
-			
-			System.out.println("THIS IS A TRUE CONDITION :)");
-		}
+
 		if(testBool){
 			//call methodA
 			boolean dummyBool1 = true;
 			if(dummyBool1) System.out.println("DUMMY BOOL IS TRUE !");
-			a.methodA();
-			
+			a.method_dummy();
+			System.out.println("just a filling statement 0");
 		}else{
-
-			
-			a.methodA2();
-			
+			System.out.println("just a filling statement 1");
+			int i=0;
+			i = i+10;
+			i++;
+			if(i>10){
+				System.out.println("just a filling statement 1.1-I");
+				i=i+15;
+				if(i<20){
+					i=i*2;
+					System.out.println("just a filling statement 1.1.1-I");
+				}else{
+					System.out.println("just a filling statement 1.1.1-E");
+					a.method_A1();
+					System.out.println("XOXOXOXOXOX");
+				}
+			}else{
+				System.out.println("just a filling statement 1.1-E");
+			}
 		}
 	}
-	public void methodA(){
-		System.out.println("still in class A, methodA()");
+	public void method_dummy(){
+		System.out.println("XOXOXOXO, methodA()");
 	}
-	public void methodA2(){
+	public void method_A1(){
 		int x = 10;
 		if((x==1)?true:false){
 			System.out.println("the is useless IF part");
 		}else{
 			System.out.println("this is another useless ELSE part !!");
 		}
-		System.out.println("now the dummy IF-ELSE is over !!");
-		methodC();
+		if(method_A2()){
+			System.out.println("Testing Call to next method in IF condition");
+		}
+		
 	}
-	private void methodC(){
+	private boolean method_A2(){
 		B b = new B();
-		b.methodB();
+		b.method_B1();
+		return true;
 	}
 }

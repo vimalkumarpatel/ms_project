@@ -16,5 +16,6 @@
 	<classpathentry kind="lib" path="lib/jasminsrc-2.5.0.jar"/>
 	<classpathentry kind="lib" path="lib/java_cup.jar"/>
 	<classpathentry kind="lib" path="lib/JFlex.jar"/>
+	<classpathentry kind="lib" path="lib/jce.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

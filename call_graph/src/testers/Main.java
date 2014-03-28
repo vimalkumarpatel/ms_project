@@ -45,8 +45,8 @@ public class Main {
 //        t2.start();
 //        t3.start();
         net.vimalpatel.test.A a = new net.vimalpatel.test.A();
-		a.methodA();
-		a.methodA2();
+		a.method_dummy();
+		a.method_A1();
     }
 
 //    public DataBaseManager getDb() {

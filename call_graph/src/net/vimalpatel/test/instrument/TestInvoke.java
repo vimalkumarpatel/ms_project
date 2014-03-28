@@ -14,6 +14,7 @@ class TestInvoke {
 	  private static void foo(){
 	    calls++;
 	    bar();
+	    //****
 	  }
 	 
 	  private static void bar(){

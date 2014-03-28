@@ -8,8 +8,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
 
+import net.vimalpatel.transformers.CallStackFinderTransformer;
 import net.vimalpatel.utils.Logger;
-import dk.brics.soot.callgraphs.CallStackFinderTransformer;
 import soot.PackManager;
 import soot.Scene;
 import soot.SootMethod;

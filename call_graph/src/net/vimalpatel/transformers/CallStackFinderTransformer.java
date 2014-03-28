@@ -1,4 +1,4 @@
-package dk.brics.soot.callgraphs;
+package net.vimalpatel.transformers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -10,7 +10,6 @@ import java.util.Stack;
 
 import net.vimalpatel.utils.Logger;
 import soot.Body;
-import soot.Local;
 import soot.MethodOrMethodContext;
 import soot.PatchingChain;
 import soot.Scene;
@@ -20,9 +19,12 @@ import soot.SootMethod;
 import soot.Unit;
 import soot.UnitBox;
 import soot.Value;
+import soot.jimple.GotoStmt;
 import soot.jimple.IfStmt;
 import soot.jimple.InvokeExpr;
 import soot.jimple.InvokeStmt;
+import soot.jimple.ReturnStmt;
+import soot.jimple.Stmt;
 import soot.jimple.internal.JGotoStmt;
 import soot.jimple.toolkits.callgraph.CHATransformer;
 import soot.jimple.toolkits.callgraph.CallGraph;
@@ -111,16 +113,20 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 			Iterator<MethodOrMethodContext> targets = new Targets(
 					cg.edgesOutOf(currentSootMethod));
 
-
+			List<SootMethod> filterOutEdges = new ArrayList<SootMethod>();
 			while (targets.hasNext()) {
 				SootMethod tgt = (SootMethod) targets.next();
-				Logger.log("\tEdgeOut:"+tgt.getSignature());
-				if (isCalledMethodInAllowedPackageList(tgt.getDeclaringClass().getPackageName())) {
-					int returnVal = Recurse(tgt);
-					if (returnVal == 1) {
-						ret = 1;
-						break;
-					}
+				if(isCalledMethodInAllowedPackageList(tgt.getDeclaringClass().getPackageName())){
+					filterOutEdges.add(tgt);
+					Logger.log("\t\tOUT EDGE="+tgt.getName());
+				}
+			}
+			
+			for(SootMethod calledMethod:filterOutEdges){
+				int returnVal = Recurse(calledMethod);
+				if (returnVal == 1) {
+					ret = 1;
+					break;
 				}
 			}
 		}
@@ -142,12 +148,13 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 
 	private boolean isCalledMethodInAllowedPackageList(String className) {
 		for(String pkgName : packageList){
-			if(className.startsWith(pkgName))
+			if(className.startsWith(pkgName)){
 				Logger.log("\t\tisCalledMethodInAllowedPackageList('"+className+"') = TRUE");
-			return true;
+				return true;
+			}
 		}
 
-		Logger.log("\t\tisCalledMethodInAllowedPackageList('"+className+"') = FALSE");
+//		Logger.log("\t\tisCalledMethodInAllowedPackageList('"+className+"') = FALSE");
 		return false;
 	}
 
@@ -216,7 +223,7 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 
 			while(itrUnits.hasNext()){
 				Unit u = itrUnits.next();
-				Logger.log("\tUNIT:"+u.getClass().getName());
+				Logger.log("\tUNIT TYPE:"+u.getClass().getName()+", UNIT:="+u);
 				pathUnits.add(u);
 
 				/**
@@ -235,17 +242,32 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 				 * 
 				 * 	keep on adding units till here to the sub-route and then break if its a Invoke to nextMethod on stack.
 				 */
-				if(u instanceof InvokeStmt){
-					InvokeStmt invokeStmt = (InvokeStmt) u;
-					InvokeExpr iExpr = invokeStmt.getInvokeExpr();
-					SootMethod calledMethod = iExpr.getMethod();
-					Logger.log("\t\tInvokeStmt Calls Method:"+calledMethod.getName()+"==" + calledMethod.getSignature());
-					if(calledMethod.getSignature().equals(nextMethodOnStack.getSignature())){
-						Logger.log("\t\tCALLED METHOD SIGNATURE MATCHES NEXT METHOD SIGNATURE.");
-						matchingInvokeTailUnits.add(invokeStmt);
-						break;
+
+				if(u instanceof Stmt){
+					Stmt s = (Stmt)u;
+					if(s.containsInvokeExpr()){
+						System.out.println("Unit containsInvokeExpr() == "+s.containsInvokeExpr());
+						InvokeExpr invokeExpr = s.getInvokeExpr();
+						SootMethod calledMethod = invokeExpr.getMethod();
+						Logger.log("\t\tStmt Calls Method:"+calledMethod.getName()+"==" + calledMethod.getSignature());
+						if(calledMethod.getSignature().equals(nextMethodOnStack.getSignature())){
+							Logger.log("\t\tCALLED METHOD SIGNATURE MATCHES NEXT METHOD SIGNATURE.");
+							matchingInvokeTailUnits.add(s);
+							break;
+						}
 					}
 				}
+//				if(u instanceof InvokeStmt){
+//					InvokeStmt invokeStmt = (InvokeStmt) u;
+//					InvokeExpr iExpr = invokeStmt.getInvokeExpr();
+//					SootMethod calledMethod = iExpr.getMethod();
+//					Logger.log("\t\tInvokeStmt Calls Method:"+calledMethod.getName()+"==" + calledMethod.getSignature());
+//					if(calledMethod.getSignature().equals(nextMethodOnStack.getSignature())){
+//						Logger.log("\t\tCALLED METHOD SIGNATURE MATCHES NEXT METHOD SIGNATURE.");
+//						matchingInvokeTailUnits.add(invokeStmt);
+//						break;
+//					}
+//				}
 			}
 
 			/**
@@ -272,12 +294,13 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 
 		for(int stackCounter=0;stackCounter<stack.size()-1;stackCounter++){
 			SootMethod currentMethodOnStack = stack.get(stackCounter);
+			SootMethod nextMethodOnStack = (stackCounter+1>stack.size())?null:stack.get(stackCounter+1);
 			/**
 			 * create a local dummy boolean for this method and insertrument in method anyways,
 			 * we will use it as and when required to control our branching !
 			 */
-			InstrumentMethodInsertLocalDummyBoolean(currentMethodOnStack);
-			
+			InstrumentMethodInsertLocalDummyBoolean(currentMethodOnStack,nextMethodOnStack);
+			System.out.println("######################### BRANCHING UNITS ##############################");
 			//we get all unit boxes that may be branching targets !
 			List<UnitBox> branchingUnitBox = currentMethodOnStack.getActiveBody().getUnitBoxes(true);
 			Iterator<UnitBox> itrUnitBox = branchingUnitBox.iterator();
@@ -285,17 +308,14 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 				UnitBox ub = itrUnitBox.next();
 				Unit u = ub.getUnit();
 				Logger.log("unitbox="+ub+" ; unit"+u);
-
 			}
-			
-			instrumentBranchesInCurrentMethodCallingNextMethod(currentMethodOnStack, stack.get(stackCounter+1));
-			
-
+			System.out.println("#######################################################");
+//			instrumentBranchesInCurrentMethodCallingNextMethod(currentMethodOnStack, stack.get(stackCounter+1));
 		}
-
 	}
 	
 	private void instrumentBranchesInCurrentMethodCallingNextMethod(SootMethod currentMethodOnStack, SootMethod NextMethod){
+		Logger.log("INSIDE :: instrumentBranchesInCurrentMethodCallingNextMethod()");
 		Iterator<Unit> snpshtItrCurrentMethodBodyUnits = currentMethodOnStack.getActiveBody().getUnits().snapshotIterator();//traceRoute.get(currentMethodOnStack);
 		while(snpshtItrCurrentMethodBodyUnits.hasNext()){
 			Unit unit = snpshtItrCurrentMethodBodyUnits.next();
@@ -441,14 +461,65 @@ public class CallStackFinderTransformer  extends SceneTransformer{
 	}
 
 	private void InstrumentMethodInsertLocalDummyBoolean(
-			SootMethod currentMethodOnStack) {
+			SootMethod currentMethodOnStack, SootMethod nextMethodOnStack) {
+		Logger.log("INSIDE :: InstrumentMethodInsertLocalDummyBoolean();");
 		Body currentMethodBody = currentMethodOnStack.getActiveBody();
-		Chain<Unit> units = currentMethodBody.getUnits();
-		Iterator<Unit> snapShotItr = units.snapshotIterator();
-		Chain<Local> locals = currentMethodBody.getLocals();
-		for(Iterator<Local> it = locals.iterator();it.hasNext();){
-			Local l = it.next();
-			Logger.log("\tLocal::"+l.getName());
+//		Chain<Unit> units = currentMethodBody.getUnits();
+		List<UnitBox> unitBoxes = currentMethodBody.getUnitBoxes(true);
+		BriefUnitGraph unitGraph = new BriefUnitGraph(currentMethodBody);
+		
+		for(UnitBox ub : unitBoxes){
+			Unit u = ub.getUnit();
+			Logger.log("BRANCHING UnitBox="+ub.toString()+" , Unit="+u.toString());
+			List<Unit> predUnits = unitGraph.getPredsOf(u);
+			for(Unit predUnit : predUnits){
+				Logger.log("\tPRED UNIT:"+predUnit);
+				if(!(predUnit instanceof IfStmt)) continue;
+				
+				List<Unit> succOfPredUnit = unitGraph.getSuccsOf(predUnit);
+				IfStmt ifstmt = (IfStmt) predUnit;
+
+				/**
+				 * we will recursively search for call to next method on stack and instrument the IF conditions!
+				 */
+				for(Unit succUnit : succOfPredUnit){
+					Logger.log("\tSUCCESOR UNIT:"+succUnit);
+					/*
+					 * check if the predecessor unit is 
+					 * IF condition and the successor unit contains a call to next method
+					 * then instrument this to TRUE or else to FALSE
+					 */
+					List<Unit> succesors = new ArrayList<Unit>();
+					succesors.add(succUnit);
+					//get list of all following successors till return/goto/if
+					boolean endOfSuccesors = false;
+					endOfSuccesors = succUnit.branches() 
+							|| (succUnit instanceof ReturnStmt)
+							|| (succUnit instanceof GotoStmt)
+							|| (succUnit instanceof IfStmt);
+					while(!endOfSuccesors){
+						List<Unit> succ = unitGraph.getSuccsOf(succUnit);
+						if(succ.size()==0){
+							break;
+						}
+						succUnit = succ.get(0);
+						succesors.addAll(succ);						
+						endOfSuccesors = succUnit.branches() 
+								|| (succUnit instanceof ReturnStmt)
+								|| (succUnit instanceof GotoStmt)
+								|| (succUnit instanceof IfStmt);
+					}
+					
+					System.out.println("\tALL SUCCESORS:"+succesors);
+					
+					
+					//now if this list of units ends in an IF conditions then we need to recurse for searching a call to next method on stack.
+					
+					
+					
+				}
+			}
+			
 		}
 	}
 }

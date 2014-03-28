@@ -9,18 +9,27 @@ package net.vimalpatel.test;
  */
 public class B {
 
-	public void methodB(){
+	public boolean method_B1(){
 		System.out.println("this is method B.b() here.");
+		return true;
 	}
 
-	
-	
-	
-	private void unreachableMethod(){
-		System.out.println("this is unreachableMethod in Class B.");
-	}
-	
 	public static void main(String[] args){
+		B b = new B();
+		int x=10;
 		
+		if(x>1){
+			System.out.println("IF...");
+			System.out.println("IF....");
+			
+			System.out.println("IF..");
+		}else{
+			System.out.println("ELSE...");
+			if(b.method_B1()){
+				System.out.println("xxx");
+			}else{
+				System.out.println("ELSE..");
+			}
+		}
 	}
 }
